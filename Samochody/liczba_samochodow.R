@@ -4,10 +4,9 @@ library(plotly)
 library(readxl)
 library(shiny)
 
-samochody_liniowy <- read_excel("Pojazdy_zarejestrowane_2021_19.xlsx", 
-                                sheet = "Arkusz4")
+samochody_liniowy <- read_excel("Zeszyt_pd.xlsx")
 
-samochody_liniowy$miesiąc_rok <- factor(samochody_liniowy$miesiąc_rok, levels = samochody_liniowy[["miesiąc_rok"]])
+
 # Define UI for application that draws a histogram
 ui <- fluidPage(
 
@@ -18,7 +17,9 @@ ui <- fluidPage(
     fluidRow(
         column(6, 
                
-               checkboxGroupInput("wojewodztwo", "Jakie województwo cię interesuje?", colnames(samochody_liniowy[,2:17]))
+               #checkboxGroupInput("wybierz_wojewodztwo", "Jakie województwo cię interesuje?", 
+                #                  factor(unique(samochody_liniowy$wojewodztwo))),
+               sliderInput("wybierz_rok", "Rok:", value = c(2015,2021), min = 2015, max = 2021, step =1)
         ),
         
         column(6,
@@ -40,15 +41,18 @@ ui <- fluidPage(
 server <- function(input, output) {
 
     output$pointPlot <- renderPlotly({
-        plot_ly(
-            data = samochody_liniowy,
-            x = ~miesiąc_rok,
-            y = as.formula(paste0('~', input$wojewodztwo)),
-            type = 'scatter', mode = 'lines'
-        )%>% 
-            layout(title = "Samochody zarejestrowane w poszczególnych miesiącach w Polsce",
-                    xaxis = list(title = "Miesiąc"),
-                    yaxis = list (title = "Liczba"))
+        ggplotly(ggplot(samochody_liniowy[(samochody_liniowy$rok >= input$wybierz_rok[1] & samochody_liniowy$rok <= input$wybierz_rok[2]) 
+                                         ,], 
+                        aes(x = rok, y = suma_w_roku/1000, group = wojewodztwo)) + 
+                                                   geom_line(aes(color = wojewodztwo))+
+                                                   geom_point(aes(color = wojewodztwo))+
+                     ggtitle("Liczba samochodów zarejestrowanych w Polsce") +
+                     xlab("Rok")+
+                     ylab("Liczba w tys.")
+                 )
+           
+        
+       
         
     })
 }
